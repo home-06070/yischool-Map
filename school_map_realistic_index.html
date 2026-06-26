@@ -1,0 +1,716 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.phone-wrap {
+  display: flex; justify-content: center;
+  padding: 1.5rem 0;
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-lg);
+}
+.phone {
+  width: 375px; height: 720px;
+  background: #f0f8ff;
+  border-radius: 32px;
+  border: 2px solid #b0d8f0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.status-bar {
+  background: #5BB8E8; color: white;
+  font-size: 12px; padding: 6px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.top-bar {
+  background: #5BB8E8; color: white;
+  text-align: center; font-size: 17px; font-weight: 500;
+  padding: 10px 16px 12px;
+}
+.content { flex: 1; overflow-y: auto; background: #f0f8ff; }
+.screen { display: none; }
+.screen.active { display: block; }
+.nav { background: white; border-top: 0.5px solid #b0d8f0; display: flex; }
+.nav-btn {
+  flex: 1; padding: 8px 4px 6px;
+  background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: #94afc4; font-size: 11px;
+}
+.nav-btn i { font-size: 22px; }
+.nav-btn.active { color: #5BB8E8; }
+
+.sv-outer {
+  position: relative;
+  margin: 12px 12px 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid #a0c8e0;
+}
+.sv-canvas { display: block; width: 100%; }
+.floor-badge {
+  position: absolute; top: 10px; left: 10px;
+  background: rgba(255,255,255,0.92);
+  border: 2px solid #5BB8E8;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 14px; font-weight: 500; color: #1a5a8a;
+  display: flex; align-items: center; gap: 4px;
+}
+.time-badge {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(30,30,30,0.7); color: white;
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 13px; font-weight: 500;
+}
+.hint-badge {
+  position: absolute; bottom: 66px; right: 12px;
+  background: rgba(255,120,30,0.92); color: white;
+  border-radius: 8px; padding: 5px 10px;
+  font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+}
+.fwd-btn {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(91,184,232,0.90);
+  border: none; border-radius: 50%;
+  width: 48px; height: 48px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.fwd-btn i { font-size: 24px; color: white; }
+
+.route-steps {
+  margin: 0 12px 8px;
+  background: white; border-radius: 12px;
+  border: 0.5px solid #b0d8f0; padding: 10px 14px;
+}
+.route-title { font-size: 12px; color: #7aabbf; font-weight: 500; margin-bottom: 8px; display:flex; align-items:center; gap:5px; }
+.step-row { display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-bottom:0.5px solid #eef6fb; }
+.step-row:last-child { border-bottom:none; }
+.step-dot { width:22px; height:22px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; }
+.step-dot.done { background:#94afc4; color:white; }
+.step-dot.now  { background:#FF8C42; color:white; }
+.step-dot.todo { background:#e0eef8; color:#7aabbf; border:1px solid #b0d8f0; }
+.step-label { flex:1; color:var(--color-text-primary); }
+.step-dist { font-size:11px; color:#94afc4; }
+
+.tt-header { background:white; padding:10px 14px 8px; display:flex; justify-content:space-between; align-items:center; border-bottom:0.5px solid #b0d8f0; }
+.tt-day-nav { display:flex; align-items:center; gap:8px; }
+.tt-day-btn { background:none; border:none; cursor:pointer; color:#5BB8E8; font-size:18px; padding:2px; }
+.tt-day-label { font-size:15px; font-weight:500; color:var(--color-text-primary); min-width:90px; text-align:center; }
+.tt-time2 { font-size:13px; color:#7aabbf; }
+.tt-body { padding:8px 12px; }
+.tt-row { display:flex; align-items:stretch; margin-bottom:6px; border-radius:8px; overflow:hidden; border:0.5px solid #b0d8f0; background:white; }
+.tt-row.highlight { background:#e3f4fc; border-color:#5BB8E8; }
+.tt-period { background:#5BB8E8; color:white; font-size:13px; font-weight:500; width:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.tt-row.highlight .tt-period { background:#3a9fd4; }
+.tt-subject { flex:1; padding:8px 10px; font-size:13px; }
+.tt-subject-name { font-weight:500; margin-bottom:2px; }
+.tt-subject-detail { font-size:11px; color:#7aabbf; }
+.tt-room { padding:8px 10px; font-size:11px; color:#5BB8E8; display:flex; align-items:center; font-weight:500; }
+.tt-next { margin:0 12px 8px; background:#fff8e6; border-radius:8px; border:0.5px solid #f0d080; padding:8px 12px; font-size:12px; color:#a07a20; display:flex; align-items:center; gap:6px; }
+.tt-badges { display:flex; gap:6px; padding:0 12px 10px; }
+.tt-badge { background:white; border:0.5px solid #b0d8f0; border-radius:20px; padding:5px 12px; font-size:12px; color:#5BB8E8; display:flex; align-items:center; gap:4px; }
+
+.msg-tabs { display:flex; background:white; border-bottom:0.5px solid #b0d8f0; }
+.msg-tab { flex:1; padding:10px; text-align:center; font-size:13px; cursor:pointer; color:#94afc4; background:none; border:none; border-bottom:2px solid transparent; }
+.msg-tab.active { color:#5BB8E8; border-bottom:2px solid #5BB8E8; }
+.msg-compose { margin:10px 12px; background:white; border-radius:12px; border:0.5px solid #b0d8f0; padding:12px; }
+.msg-compose-title { font-size:13px; color:#7aabbf; margin-bottom:8px; font-weight:500; }
+.msg-target-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:0.5px solid #e8f5fb; font-size:13px; }
+.msg-target-row:last-of-type { border-bottom:none; }
+.msg-check { width:18px; height:18px; border-radius:4px; border:1.5px solid #b0d8f0; background:white; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.msg-check.checked { background:#5BB8E8; border-color:#5BB8E8; }
+.msg-check.checked::after { content:'✓'; color:white; font-size:11px; }
+.msg-textarea { width:100%; margin-top:10px; border:0.5px solid #b0d8f0; border-radius:8px; padding:8px 10px; font-size:13px; resize:none; background:#f7fafc; height:60px; }
+.msg-send-btn { width:100%; margin-top:8px; background:#5BB8E8; color:white; border:none; border-radius:8px; padding:9px; font-size:13px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+.msg-inbox-title { padding:8px 14px 4px; font-size:12px; color:#7aabbf; font-weight:500; }
+.msg-item { margin:0 12px 6px; background:white; border-radius:12px; border:0.5px solid #b0d8f0; padding:10px 12px; display:flex; align-items:flex-start; gap:10px; }
+.msg-avatar { width:36px; height:36px; border-radius:50%; background:#d4eef9; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:500; color:#3a9fd4; flex-shrink:0; }
+.msg-item-body { flex:1; min-width:0; }
+.msg-item-header { display:flex; justify-content:space-between; margin-bottom:3px; }
+.msg-item-name { font-size:13px; font-weight:500; }
+.msg-item-time { font-size:11px; color:#94afc4; }
+.msg-item-text { font-size:12px; color:var(--color-text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-unread { width:8px; height:8px; border-radius:50%; background:#5BB8E8; margin-top:4px; }
+</style>
+
+<h2 class="sr-only">School Mapアプリ — リアル廊下視点マップ・時間割・メッセージ</h2>
+
+<div class="phone-wrap">
+ <div class="phone">
+  <div class="status-bar">
+   <span>9:41</span>
+   <span style="display:flex;gap:6px;align-items:center;">
+    <i class="ti ti-wifi" style="font-size:14px;" aria-hidden="true"></i>
+    <i class="ti ti-battery" style="font-size:14px;" aria-hidden="true"></i>
+   </span>
+  </div>
+  <div class="top-bar" id="topBar">🗺 School Map</div>
+  <div class="content">
+
+   <!-- MAP SCREEN -->
+   <div class="screen active" id="screen-map">
+    <div class="sv-outer">
+     <canvas class="sv-canvas" id="svCanvas" width="351" height="280"></canvas>
+     <div class="floor-badge">
+      <i class="ti ti-building" style="font-size:13px;" aria-hidden="true"></i>
+      <span id="floorTxt">3F</span>
+     </div>
+     <div class="time-badge">13:20</div>
+     <div class="hint-badge" id="hintBadge">
+      <i class="ti ti-corner-up-right" style="font-size:14px;" aria-hidden="true"></i>
+      <span id="hintTxt">右折 10m先</span>
+     </div>
+     <button class="fwd-btn" onclick="stepFwd()" aria-label="前進">
+      <i class="ti ti-arrow-up" aria-hidden="true"></i>
+     </button>
+    </div>
+    <div class="route-steps">
+     <div class="route-title"><i class="ti ti-route" style="font-size:14px;" aria-hidden="true"></i>経路ステップ</div>
+     <div class="step-row"><div class="step-dot done" id="sd0">✓</div><div class="step-label">3号館 3Fを進む</div><div class="step-dist">出発</div></div>
+     <div class="step-row"><div class="step-dot now"  id="sd1">2</div><div class="step-label">突き当たりを右折</div><div class="step-dist">10m先</div></div>
+     <div class="step-row"><div class="step-dot todo" id="sd2">3</div><div class="step-label">階段を下りて2Fへ</div><div class="step-dist">20m先</div></div>
+     <div class="step-row"><div class="step-dot todo" id="sd3">4</div><div class="step-label">CR.22に到着</div><div class="step-dist">35m先</div></div>
+    </div>
+   </div>
+
+   <!-- TIMETABLE -->
+   <div class="screen" id="screen-tt">
+    <div class="tt-header">
+     <div class="tt-day-nav">
+      <button class="tt-day-btn" onclick="changeDay(-1)"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+      <span class="tt-day-label" id="dayLabel">木曜日</span>
+      <button class="tt-day-btn" onclick="changeDay(1)"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+     </div>
+     <span class="tt-time2">13:21</span>
+    </div>
+    <div class="tt-body">
+     <div class="tt-row"><div class="tt-period">1</div><div class="tt-subject"><div class="tt-subject-name">生基</div><div class="tt-subject-detail">CR.23</div></div><div class="tt-room">3F</div></div>
+     <div class="tt-row"><div class="tt-period">2</div><div class="tt-subject"><div class="tt-subject-name">数学Ⅱ</div><div class="tt-subject-detail">CR.23</div></div><div class="tt-room">3F</div></div>
+     <div class="tt-row"><div class="tt-period">3</div><div class="tt-subject"><div class="tt-subject-name">国語</div><div class="tt-subject-detail">コンピュータ室</div></div><div class="tt-room">3F</div></div>
+     <div class="tt-row"><div class="tt-period">4</div><div class="tt-subject"><div class="tt-subject-name">国語</div><div class="tt-subject-detail">コンピュータ室</div></div><div class="tt-room">3F</div></div>
+     <div class="tt-row highlight"><div class="tt-period">5</div><div class="tt-subject"><div class="tt-subject-name">EWI</div><div class="tt-subject-detail">セミナー4</div></div><div class="tt-room">2F</div></div>
+     <div class="tt-row"><div class="tt-period">6</div><div class="tt-subject"><div class="tt-subject-name">古探</div><div class="tt-subject-detail">CR.22</div></div><div class="tt-room">3F</div></div>
+     <div class="tt-row"><div class="tt-period">7</div><div class="tt-subject"><div class="tt-subject-name">古探</div><div class="tt-subject-detail">CR.22</div></div><div class="tt-room">3F</div></div>
+    </div>
+    <div class="tt-next"><i class="ti ti-clock" aria-hidden="true"></i>次の授業：EWI（セミナー4・2F）</div>
+    <div class="tt-badges">
+     <div class="tt-badge"><i class="ti ti-calendar-event" style="font-size:14px;" aria-hidden="true"></i>行事</div>
+     <div class="tt-badge"><i class="ti ti-book" style="font-size:14px;" aria-hidden="true"></i>教材を変える</div>
+    </div>
+   </div>
+
+   <!-- MESSAGE -->
+   <div class="screen" id="screen-msg">
+    <div class="msg-tabs">
+     <button class="msg-tab active" id="tab-send" onclick="switchMsgTab('send')">送信</button>
+     <button class="msg-tab" id="tab-recv" onclick="switchMsgTab('recv')">受信</button>
+    </div>
+    <div id="panel-send">
+     <div class="msg-compose">
+      <div class="msg-compose-title"><i class="ti ti-send" style="font-size:14px;vertical-align:-2px;" aria-hidden="true"></i> メッセージを送信</div>
+      <div class="msg-target-row">
+       <div class="msg-check checked" id="chk-friend" onclick="toggleCheck('chk-friend')"></div>
+       <i class="ti ti-users" style="font-size:16px;color:#5BB8E8;" aria-hidden="true"></i><span>友達に送信</span>
+      </div>
+      <div class="msg-target-row">
+       <div class="msg-check" id="chk-teacher" onclick="toggleCheck('chk-teacher')"></div>
+       <i class="ti ti-school" style="font-size:16px;color:#5BB8E8;" aria-hidden="true"></i><span>先生に送信</span>
+      </div>
+      <textarea class="msg-textarea" placeholder="コメントを追加..."></textarea>
+      <button class="msg-send-btn"><i class="ti ti-send" style="font-size:15px;" aria-hidden="true"></i>送信する</button>
+     </div>
+    </div>
+    <div id="panel-recv" style="display:none;">
+     <div class="msg-inbox-title">受信メッセージ</div>
+     <div class="msg-item">
+      <div class="msg-avatar">田</div>
+      <div class="msg-item-body">
+       <div class="msg-item-header"><span class="msg-item-name">田中さくら</span><span class="msg-item-time">13:15</span></div>
+       <div class="msg-item-text">次のEWI、セミナー4でいいよね？</div>
+      </div><div class="msg-unread"></div>
+     </div>
+     <div class="msg-item">
+      <div class="msg-avatar">鈴</div>
+      <div class="msg-item-body">
+       <div class="msg-item-header"><span class="msg-item-name">鈴木たくや</span><span class="msg-item-time">12:50</span></div>
+       <div class="msg-item-text">放課後、図書館で一緒に勉強しよう！</div>
+      </div>
+     </div>
+    </div>
+   </div>
+
+  </div>
+  <nav class="nav">
+   <button class="nav-btn active" id="nav-map" onclick="switchScreen('map')"><i class="ti ti-map" aria-hidden="true"></i><span>マップ</span></button>
+   <button class="nav-btn" id="nav-tt" onclick="switchScreen('tt')"><i class="ti ti-clock" aria-hidden="true"></i><span>時間割</span></button>
+   <button class="nav-btn" id="nav-msg" onclick="switchScreen('msg')"><i class="ti ti-message-circle" aria-hidden="true"></i><span>メッセージ</span></button>
+  </nav>
+ </div>
+</div>
+
+<script>
+const TITLES={map:'🗺 School Map',tt:'📅 時間割',msg:'💬 メッセージ'};
+function switchScreen(id){
+  ['map','tt','msg'].forEach(s=>{
+    document.getElementById('screen-'+s).classList.remove('active');
+    document.getElementById('nav-'+s).classList.remove('active');
+  });
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  document.getElementById('topBar').textContent=TITLES[id];
+}
+const DAYS=['月曜日','火曜日','水曜日','木曜日','金曜日'];
+let dayIdx=3;
+function changeDay(d){dayIdx=Math.max(0,Math.min(4,dayIdx+d));document.getElementById('dayLabel').textContent=DAYS[dayIdx];}
+function switchMsgTab(t){
+  ['send','recv'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('panel-'+x).style.display=x===t?'':'none';
+  });
+}
+function toggleCheck(id){document.getElementById(id).classList.toggle('checked');}
+
+// ── Canvas ──────────────────────────────────────────────
+const CV=document.getElementById('svCanvas');
+const X=CV.getContext('2d');
+const W=351,H=280;
+
+let scene=0, tick=0;
+
+const SCENES=[
+  {floor:'3F',hint:'右折 10m先'},
+  {floor:'3F',hint:'階段 15m先'},
+  {floor:'2F',hint:'CR.22 まで5m'},
+  {floor:'2F',hint:'到着！'},
+];
+
+// ── Utility ─────────────────────────────────────────────
+function lerp(a,b,t){return a+(b-a)*t;}
+
+// ── Scene 0: リアル廊下（直進） ──────────────────────
+function drawCorridor(t){
+  const VX=W/2, VY=H*0.44;
+  // 消失点ベース
+  const V={x:VX,y:VY};
+
+  // ── 空間全体 ──
+  // 天井
+  X.fillStyle='#d6d0c8'; X.fillRect(0,0,W,VY);
+  // 床
+  const fg=X.createLinearGradient(0,VY,0,H);
+  fg.addColorStop(0,'#b0a898'); fg.addColorStop(1,'#9a9080');
+  X.fillStyle=fg; X.fillRect(0,VY,W,H-VY);
+
+  // ── 壁（左・右） ──
+  // 左壁：クリーム色コンクリート
+  X.fillStyle='#cec8be';
+  X.beginPath(); X.moveTo(0,0); X.lineTo(0,H); X.lineTo(V.x,V.y); X.closePath(); X.fill();
+  // 右壁
+  X.fillStyle='#c8c2b8';
+  X.beginPath(); X.moveTo(W,0); X.lineTo(W,H); X.lineTo(V.x,V.y); X.closePath(); X.fill();
+
+  // ── 正面壁 ──
+  X.fillStyle='#bab4aa';
+  const fw=W*0.18;
+  X.fillRect(fw,H*0.06,W-fw*2,VY-H*0.06);
+
+  // ── 正面壁：掲示板 ──
+  // 緑の掲示板
+  X.fillStyle='#5a7a50';
+  X.fillRect(fw+8,H*0.10,W*0.28,VY-H*0.14);
+  X.fillStyle='#4a6a40';
+  X.strokeStyle='#3a5a30'; X.lineWidth=2;
+  X.strokeRect(fw+8,H*0.10,W*0.28,VY-H*0.14);
+  // 掲示物（紙）
+  const papers=[
+    {x:fw+12,y:H*0.12,w:38,h:18,c:'#f5f0e0'},
+    {x:fw+14,y:H*0.12+22,w:50,h:14,c:'#e8f0f8'},
+    {x:fw+12,y:H*0.12+40,w:44,h:12,c:'#fff0e0'},
+  ];
+  papers.forEach(p=>{
+    X.fillStyle=p.c; X.fillRect(p.x,p.y,p.w,p.h);
+    X.strokeStyle='#ccc'; X.lineWidth=0.5; X.strokeRect(p.x,p.y,p.w,p.h);
+  });
+  // 押しピン
+  [[fw+14,H*0.12+1],[fw+48,H*0.12+1],[fw+14,H*0.12+34],[fw+48,H*0.12+34]].forEach(([px,py])=>{
+    X.fillStyle='#e05050'; X.beginPath(); X.arc(px,py,2,0,Math.PI*2); X.fill();
+  });
+
+  // ── 壁の横ライン（幅木・腰壁） ──
+  // 腰壁ライン（左壁）
+  X.strokeStyle='#a09888'; X.lineWidth=1.5;
+  X.beginPath(); X.moveTo(0,H*0.65); X.lineTo(V.x,V.y); X.stroke();
+  // 腰壁ライン（右壁）
+  X.beginPath(); X.moveTo(W,H*0.65); X.lineTo(V.x,V.y); X.stroke();
+  // 幅木色
+  X.fillStyle='#a09080';
+  X.beginPath(); X.moveTo(0,H*0.65); X.lineTo(V.x,V.y); X.lineTo(V.x,H); X.lineTo(0,H); X.closePath(); X.fill();
+  X.fillStyle='#988870';
+  X.beginPath(); X.moveTo(W,H*0.65); X.lineTo(V.x,V.y); X.lineTo(V.x,H); X.lineTo(W,H); X.closePath(); X.fill();
+
+  // ── 床タイル ──
+  X.strokeStyle='rgba(80,70,60,0.25)'; X.lineWidth=0.6;
+  // 縦線（放射状）
+  for(let i=0;i<=8;i++){
+    const bx=i*(W/8);
+    X.beginPath(); X.moveTo(V.x,V.y); X.lineTo(bx,H); X.stroke();
+  }
+  // 横線
+  for(let j=1;j<=5;j++){
+    const fy=lerp(V.y,H,j/5);
+    const xspan=(j/5)*(W/2);
+    X.beginPath(); X.moveTo(V.x-xspan,fy); X.lineTo(V.x+xspan,fy); X.stroke();
+  }
+
+  // ── 天井タイル ──
+  X.strokeStyle='rgba(80,70,60,0.12)'; X.lineWidth=0.5;
+  for(let j=1;j<=3;j++){
+    const cy=lerp(V.y,0,j/3);
+    const xspan=(j/3)*(W/2);
+    X.beginPath(); X.moveTo(V.x-xspan,cy); X.lineTo(V.x+xspan,cy); X.stroke();
+  }
+
+  // ── 蛍光灯（天井） ──
+  const scroll=(t*0.008)%1;
+  for(let l=0;l<4;l++){
+    const lf=((l/4)+scroll)%1;
+    const ly=lerp(V.y*0.95,H*0.02,lf);
+    const lw=lerp(4,(W-fw*2)*0.5,lf);
+    const alpha=lf>0.92?0:Math.min(1,lf*4)*0.75;
+    X.fillStyle=`rgba(255,255,230,${alpha})`;
+    X.fillRect(V.x-lw,ly,lw*2,lerp(2,6,lf));
+    // 光の広がり
+    if(lf>0.3){
+      const gr=X.createRadialGradient(V.x,ly,0,V.x,ly,lw*1.5);
+      gr.addColorStop(0,`rgba(255,255,200,${alpha*0.3})`);
+      gr.addColorStop(1,'rgba(255,255,200,0)');
+      X.fillStyle=gr; X.fillRect(V.x-lw*1.5,ly-lw*0.5,lw*3,lw*1.5);
+    }
+  }
+
+  // ── 左側ドア2枚 ──
+  drawRealisticDoor(X,'left',0,W,H,V);
+  drawRealisticDoor(X,'left',1,W,H,V);
+  // ── 右側ドア2枚 ──
+  drawRealisticDoor(X,'right',0,W,H,V);
+  drawRealisticDoor(X,'right',1,W,H,V);
+
+  // ── 進行方向矢印（床） ──
+  X.save();
+  for(let a=0;a<4;a++){
+    const af=((a/4)+(t*0.008)%1)%1;
+    if(af>0.9) continue;
+    const ay=lerp(H*0.97,V.y+8,af);
+    const as=lerp(16,3,af);
+    const ax=V.x;
+    X.globalAlpha=(1-af)*0.7;
+    X.fillStyle='#FF8C42';
+    X.beginPath();
+    X.moveTo(ax,ay-as); X.lineTo(ax+as*0.5,ay+as*0.35);
+    X.lineTo(ax,ay+as*0.1); X.lineTo(ax-as*0.5,ay+as*0.35);
+    X.closePath(); X.fill();
+  }
+  X.restore();
+}
+
+function drawRealisticDoor(ctx,side,idx,W,H,V){
+  // 奥行きに応じたドア位置
+  const near=idx===0;
+  const depth=near?0.42:0.72; // 0=消失点 1=画面端
+  const wallAlpha=near?1:0.85;
+
+  // 壁上のドア輪郭を消失点からの射影で計算
+  const wallX = side==='left'
+    ? lerp(V.x, 0, depth)
+    : lerp(V.x, W, depth);
+
+  const wallW = lerp(0, side==='left'?V.x:W-V.x, depth);
+  const wallH_total = H;
+
+  // ドアのサイズ（消失点視点）
+  const dw = wallW * (near ? 0.44 : 0.38);
+  const dh = H * (near ? 0.50 : 0.38) * (1 - depth*0.3);
+  const dtop = V.y - dh * (near ? 0.55 : 0.52);
+  const dbot = dtop + dh;
+
+  let dx;
+  if(side==='left') dx = wallX - dw;
+  else              dx = wallX;
+
+  // ── ドア枠（コンクリート壁に埋め込まれた感じ） ──
+  ctx.fillStyle=`rgba(90,80,70,${wallAlpha})`;
+  ctx.fillRect(dx-3, dtop-3, dw+6, dh+3);
+
+  // ── ドア本体（白/クリーム色） ──
+  ctx.fillStyle=near?'#e8e2d8':'#dedad0';
+  ctx.fillRect(dx, dtop, dw, dh);
+
+  // ── ドアパネル線 ──
+  ctx.strokeStyle=near?'#c0b8a8':'#b8b0a0';
+  ctx.lineWidth=near?1:0.7;
+  const pw=dw-8, ph1=dh*0.35, ph2=dh*0.44;
+  ctx.strokeRect(dx+4, dtop+4, pw, ph1); // 上パネル
+  ctx.strokeRect(dx+4, dtop+ph1+6, pw, ph2); // 下パネル
+
+  // ── 窓（ドア上部の小窓） ──
+  if(near){
+    ctx.fillStyle='#b8d8e8';
+    ctx.fillRect(dx+dw*0.2, dtop+6, dw*0.6, dh*0.22);
+    ctx.strokeStyle='#90b0c0'; ctx.lineWidth=1;
+    ctx.strokeRect(dx+dw*0.2, dtop+6, dw*0.6, dh*0.22);
+    // 窓の桟
+    ctx.beginPath();
+    ctx.moveTo(dx+dw*0.5, dtop+6); ctx.lineTo(dx+dw*0.5, dtop+6+dh*0.22);
+    ctx.stroke();
+  }
+
+  // ── ドアノブ ──
+  const hx=side==='left'? dx+dw-7 : dx+6;
+  const hy=dtop+dh*0.55;
+  const hr=near?3.5:2;
+  ctx.fillStyle='#b8982a';
+  ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#907018'; ctx.lineWidth=near?1:0.7; ctx.stroke();
+
+  // ── ドア番号プレート ──
+  const labels=[
+    ['CR.23','CR.24'],
+    ['CR.21','CR.22'],
+  ];
+  const label=side==='left'?labels[idx][0]:labels[idx][1];
+  const plw=near?28:20, plh=near?12:9;
+  const plx=dx+dw/2-plw/2;
+  const ply=dtop-plh-5;
+  ctx.fillStyle='#5BB8E8';
+  ctx.fillRect(plx,ply,plw,plh);
+  ctx.fillStyle='white'; ctx.font=`bold ${near?9:7}px sans-serif`; ctx.textAlign='center';
+  ctx.fillText(label, plx+plw/2, ply+plh-2);
+}
+
+// ── Scene 1: T字路・右折 ──────────────────────────────
+function drawTJunction(t){
+  const VX=W/2, VY=H*0.44;
+  // 左壁（突き当たり）
+  X.fillStyle='#cec8be';
+  X.beginPath(); X.moveTo(0,0); X.lineTo(0,H); X.lineTo(VX*0.9,VY); X.closePath(); X.fill();
+  // 正面壁（左半分に壁）
+  X.fillStyle='#bab4aa';
+  X.fillRect(W*0.04,H*0.06,VX*0.84,VY-H*0.06);
+
+  // 右側：右方向の廊下
+  // 右廊下の天井
+  X.fillStyle='#d0cac0'; X.fillRect(VX*0.9,0,W-VX*0.9,VY);
+  // 右廊下の床
+  const rfg=X.createLinearGradient(0,VY,0,H);
+  rfg.addColorStop(0,'#b0a898'); rfg.addColorStop(1,'#9a9080');
+  X.fillStyle=rfg; X.fillRect(VX*0.9,VY,W-VX*0.9,H-VY);
+  // 右廊下奥の壁
+  const rFar=X.createLinearGradient(VX*0.9,0,W,0);
+  rFar.addColorStop(0,'rgba(140,130,120,0)'); rFar.addColorStop(1,'rgba(100,95,88,0.85)');
+  X.fillStyle=rFar; X.fillRect(VX*0.9,0,W-VX*0.9,VY);
+
+  // 右廊下の境界線（壁の切れ目）
+  X.strokeStyle='#808070'; X.lineWidth=2;
+  X.beginPath(); X.moveTo(VX*0.9,0); X.lineTo(VX*0.9,H); X.stroke();
+
+  // 幅木
+  X.fillStyle='#a09080';
+  X.beginPath(); X.moveTo(0,H*0.65); X.lineTo(VX*0.9,VY); X.lineTo(VX*0.9,H); X.lineTo(0,H); X.closePath(); X.fill();
+
+  // 床タイル（左エリア）
+  X.strokeStyle='rgba(80,70,60,0.2)'; X.lineWidth=0.6;
+  for(let j=1;j<=5;j++){
+    const fy=lerp(VY,H,j/5);
+    X.beginPath(); X.moveTo(0,fy); X.lineTo(VX*0.9,fy); X.stroke();
+  }
+  // 縦線
+  for(let i=1;i<=3;i++){
+    const fx=i*(VX*0.9/4);
+    X.beginPath(); X.moveTo(VX*0.9,VY); X.lineTo(fx,H); X.stroke();
+  }
+
+  // 天井蛍光灯（右廊下）
+  X.fillStyle='rgba(255,255,210,0.6)';
+  X.fillRect(VX*0.9+10,H*0.04,W-VX*0.9-20,4);
+
+  // 左壁掲示板
+  X.fillStyle='#5a7a50';
+  X.fillRect(W*0.06,H*0.10,W*0.22,VY-H*0.14);
+  X.fillStyle='#f5f0e0'; X.fillRect(W*0.08,H*0.12,W*0.18,12);
+  X.fillStyle='#e8f0f8'; X.fillRect(W*0.08,H*0.12+16,W*0.16,10);
+
+  // ── 右折矢印（床・右方向） ──
+  const pulse=0.75+Math.sin(t*0.1)*0.25;
+  X.save(); X.globalAlpha=pulse;
+  X.fillStyle='#FF8C42';
+  const ax=W*0.75, ay=H*0.78, as=22;
+  X.beginPath();
+  X.moveTo(ax+as,ay);
+  X.lineTo(ax,ay-as*0.5); X.lineTo(ax,ay-as*0.18);
+  X.lineTo(ax-as*0.5,ay-as*0.18); X.lineTo(ax-as*0.5,ay+as*0.18);
+  X.lineTo(ax,ay+as*0.18); X.lineTo(ax,ay+as*0.5);
+  X.closePath(); X.fill();
+  X.restore();
+  X.fillStyle='#cc5500'; X.font='bold 12px sans-serif'; X.textAlign='center';
+  X.fillText('右折', ax, ay+as*0.5+16);
+
+  // 右廊下にドア見える
+  X.fillStyle='#d8d2c8'; X.fillRect(W*0.82,H*0.12,22,H*0.28);
+  X.strokeStyle='#a09880'; X.lineWidth=1; X.strokeRect(W*0.82,H*0.12,22,H*0.28);
+}
+
+// ── Scene 2: 階段 ────────────────────────────────────
+function drawStairs(t){
+  // 壁
+  X.fillStyle='#cec8be'; X.fillRect(0,0,W,H);
+  X.fillStyle='#bfb9af'; X.fillRect(W*0.1,0,W*0.8,H);
+
+  // 手すり（左）
+  X.strokeStyle='#6a5a40'; X.lineWidth=5; X.lineCap='round';
+  X.beginPath(); X.moveTo(W*0.22,H*0.12); X.lineTo(W*0.7,H*0.82); X.stroke();
+  // 手すり支柱
+  for(let i=0;i<5;i++){
+    const sf=i/4;
+    const sx=lerp(W*0.22,W*0.7,sf);
+    const sy=lerp(H*0.12,H*0.82,sf);
+    X.strokeStyle='#8a7a58'; X.lineWidth=2;
+    X.beginPath(); X.moveTo(sx,sy); X.lineTo(sx,sy+14+sf*6); X.stroke();
+  }
+
+  // 階段ステップ
+  const steps=8;
+  for(let i=0;i<steps;i++){
+    const sf=i/steps;
+    const sx=lerp(W*0.12,W*0.7,sf);
+    const sy=lerp(H*0.15,H*0.82,sf);
+    const sw=lerp(W*0.76,W*0.24,sf);
+    const sh=lerp((H*0.67/steps)*1.05,(H*0.67/steps)*0.65,sf);
+    // ステップ面（踏み板）
+    X.fillStyle=i%2===0?'#d8d0c0':'#ccc4b2';
+    X.fillRect(sx,sy,sw,sh);
+    // ステップ側面
+    X.fillStyle='#b0a898';
+    X.fillRect(sx,sy+sh,sw,sh*0.25);
+    // ステップ端のライン
+    X.strokeStyle='#a09888'; X.lineWidth=0.8;
+    X.strokeRect(sx,sy,sw,sh);
+    // ノンスリップ（黄色ライン）
+    X.fillStyle='rgba(240,200,60,0.7)';
+    X.fillRect(sx,sy,sw,2.5);
+  }
+
+  // 壁のライン
+  X.strokeStyle='#a09888'; X.lineWidth=1;
+  X.beginPath(); X.moveTo(W*0.1,0); X.lineTo(W*0.1,H); X.stroke();
+  X.beginPath(); X.moveTo(W*0.9,0); X.lineTo(W*0.9,H); X.stroke();
+
+  // 2Fサイン
+  X.fillStyle='#5BB8E8'; X.fillRect(W/2-28,H*0.86,56,22);
+  X.fillStyle='white'; X.font='bold 13px sans-serif'; X.textAlign='center';
+  X.fillText('2F ↓', W/2, H*0.86+15);
+
+  // 歩いている人
+  const pf=(t*0.006)%1;
+  const px=lerp(W*0.38,W*0.62,pf);
+  const py=lerp(H*0.18,H*0.75,pf)+Math.sin(pf*Math.PI*12)*3;
+  // 影
+  X.fillStyle='rgba(0,0,0,0.12)';
+  X.beginPath(); X.ellipse(px,py+22,8,3,0,0,Math.PI*2); X.fill();
+  // 体
+  X.fillStyle='#4a80c0'; X.fillRect(px-5,py,10,14);
+  // 頭
+  X.fillStyle='#e0c8a0'; X.beginPath(); X.arc(px,py-7,7,0,Math.PI*2); X.fill();
+  // 足
+  const legSwing=Math.sin(pf*Math.PI*12)*6;
+  X.fillStyle='#3a60a0';
+  X.fillRect(px-5,py+14,4,10+legSwing); X.fillRect(px+1,py+14,4,10-legSwing);
+}
+
+// ── Scene 3: CR.22 到着 ──────────────────────────────
+function drawArrived(t){
+  const VX=W/2, VY=H*0.44;
+  // 壁
+  X.fillStyle='#cec8be'; X.fillRect(0,0,W,H);
+  // 正面の廊下
+  X.fillStyle='#c8c2b8';
+  X.beginPath(); X.moveTo(0,0); X.lineTo(0,H); X.lineTo(VX,VY); X.closePath(); X.fill();
+  X.fillStyle='#c2bcb2';
+  X.beginPath(); X.moveTo(W,0); X.lineTo(W,H); X.lineTo(VX,VY); X.closePath(); X.fill();
+  X.fillStyle='#b8b2a8'; X.fillRect(W*0.14,H*0.05,W*0.72,VY-H*0.05);
+
+  // 床
+  const fg=X.createLinearGradient(0,VY,0,H);
+  fg.addColorStop(0,'#b0a898'); fg.addColorStop(1,'#9a9080');
+  X.fillStyle=fg; X.fillRect(0,VY,W,H-VY);
+  // 床タイル
+  X.strokeStyle='rgba(80,70,60,0.2)'; X.lineWidth=0.6;
+  for(let j=1;j<=5;j++){const fy=lerp(VY,H,j/5); X.beginPath(); X.moveTo(0,fy); X.lineTo(W,fy); X.stroke();}
+
+  // ── CR.22 ドア（大きく・正面）──
+  const dx=VX-46, dy=H*0.04, dw=92, dh=H*0.74;
+  // 枠
+  X.fillStyle='#706050'; X.fillRect(dx-5,dy-2,dw+10,dh+4);
+  // ドア本体
+  X.fillStyle='#e4ded4'; X.fillRect(dx,dy,dw,dh);
+  // パネル
+  X.strokeStyle='#c8c0b0'; X.lineWidth=1.2;
+  X.strokeRect(dx+8,dy+8,dw-16,dh*0.33);
+  X.strokeRect(dx+8,dy+dh*0.37,dw-16,dh*0.22);
+  X.strokeRect(dx+8,dy+dh*0.63,dw-16,dh*0.29);
+  // 窓
+  X.fillStyle='#b8d8e8'; X.fillRect(dx+12,dy+10,dw-24,dh*0.28);
+  X.strokeStyle='#90b0c0'; X.lineWidth=1; X.strokeRect(dx+12,dy+10,dw-24,dh*0.28);
+  X.beginPath(); X.moveTo(VX,dy+10); X.lineTo(VX,dy+10+dh*0.28); X.stroke();
+  // ノブ
+  X.fillStyle='#c0980a'; X.beginPath(); X.arc(dx+dw-12,dy+dh*0.54,5,0,Math.PI*2); X.fill();
+  X.strokeStyle='#906800'; X.lineWidth=1; X.stroke();
+  X.fillStyle='#a07808'; X.fillRect(dx+dw-14,dy+dh*0.54,3,12);
+
+  // 部屋番号プレート
+  X.fillStyle='#2a2a2a'; X.fillRect(VX-22,dy-18,44,16);
+  X.fillStyle='white'; X.font='bold 11px sans-serif'; X.textAlign='center';
+  X.fillText('CR.22', VX, dy-6);
+
+  // 到着チェック
+  const pulse2=0.85+Math.sin(t*0.08)*0.15;
+  X.save(); X.globalAlpha=pulse2;
+  X.fillStyle='#3aaa5a';
+  X.beginPath(); X.arc(VX,H*0.88,20,0,Math.PI*2); X.fill();
+  X.strokeStyle='white'; X.lineWidth=3; X.lineCap='round';
+  X.beginPath(); X.moveTo(VX-9,H*0.88); X.lineTo(VX-2,H*0.88+8); X.lineTo(VX+10,H*0.88-8); X.stroke();
+  X.restore();
+  X.fillStyle='#1a6a30'; X.font='bold 13px sans-serif'; X.textAlign='center';
+  X.fillText('到着！', VX, H*0.88+36);
+}
+
+// ── Render loop ──────────────────────────────────────
+function render(){
+  X.clearRect(0,0,W,H);
+  if(scene===0) drawCorridor(tick);
+  else if(scene===1) drawTJunction(tick);
+  else if(scene===2) drawStairs(tick);
+  else drawArrived(tick);
+  tick++;
+  requestAnimationFrame(render);
+}
+render();
+
+const HINT_TEXTS=['右折 10m先','階段 15m先','CR.22 まで5m','到着！'];
+const FLOOR_TEXTS=['3F','3F','2F','2F'];
+function updateUI(){
+  document.getElementById('floorTxt').textContent=FLOOR_TEXTS[scene];
+  document.getElementById('hintTxt').textContent=HINT_TEXTS[scene];
+  const hb=document.getElementById('hintBadge');
+  hb.style.display=scene===3?'none':'flex';
+  [0,1,2,3].forEach(i=>{
+    const el=document.getElementById('sd'+i);
+    if(i<scene){el.className='step-dot done';el.textContent='✓';}
+    else if(i===scene){el.className='step-dot now';el.textContent=i+1;}
+    else{el.className='step-dot todo';el.textContent=i+1;}
+  });
+}
+updateUI();
+function stepFwd(){
+  if(scene<3){scene++;tick=0;updateUI();}
+}
+</script>
